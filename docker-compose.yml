@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  migrate:
+    build:
+      context: ./migrate
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: [ "tail", "-F", "anything" ]
+    depends_on:
+      - postgres
+    volumes:
+      - ./migrate/migrations:/usr/src/app/migrations
+    env_file:
+      - ./.env
+  postgres:
+    image: postgres:alpine
+    restart: unless-stopped
+    command: [ "postgres", "-c", "log_statement=all", "-c", "log_destination=stderr" ]
+    environment:
+      POSTGRES_DB: "db"
+      POSTGRES_USER: "db"
+      POSTGRES_PASSWORD: "db"
+    volumes:
+      - ./data/pg/data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 60s
+      retries: 4
+    ports:
+      - "5432:5432"
