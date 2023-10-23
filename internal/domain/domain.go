@@ -27,6 +27,7 @@ type FilterWithPagination struct {
 }
 
 type Response struct {
-	Data  any   `json:"data"`
-	Error error `json:"error"`
+	Data       any     `json:"data,omitempty"`
+	Error      *string `json:"error,omitempty"`
+	StatusCode int     `json:"-"`
 }

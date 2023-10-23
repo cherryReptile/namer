@@ -2,44 +2,108 @@ package person
 
 import (
 	"database/sql"
+	"github.com/pkg/errors"
 	"namer/internal/domain"
-	"namer/internal/storage/repository/postgres/person"
+	personAPI "namer/internal/storage/repository/api/person"
+	personPostgres "namer/internal/storage/repository/postgres/person"
+	"net/http"
 )
 
+var personNotFoundErr = "person not found"
+
 type Usecase interface {
-	NewPerson(req *domain.Person) (*domain.Person, error)
-	GetByID(id int) (*domain.Person, error)
-	GetWithFilterAndPagination(req *domain.FilterWithPagination) ([]domain.Person, error)
-	Update(req *domain.Person) (*domain.Person, error)
-	Delete(id int) error
+	NewPerson(req *domain.Person) (*domain.Response, error)
+	GetByID(id int) (*domain.Response, error)
+	GetWithFilterAndPagination(req *domain.FilterWithPagination) (*domain.Response, error)
+	Update(req *domain.Person) (*domain.Response, error)
+	Delete(id int) (*domain.Response, error)
 }
 
 type usecase struct {
-	personRepository person.Repository
+	apiRepository    personAPI.Repository
+	personRepository personPostgres.Repository
 }
 
 func NewUsecase(db *sql.DB) Usecase {
 	return &usecase{
-		personRepository: person.NewRepository(db),
+		apiRepository:    personAPI.NewRepository(),
+		personRepository: personPostgres.NewRepository(db),
 	}
 }
 
-func (u *usecase) NewPerson(req *domain.Person) (*domain.Person, error) {
+func (u *usecase) NewPerson(req *domain.Person) (*domain.Response, error) {
+	prepareRequest(req)
+
+	info, err := u.apiRepository.GetNameInfo(req.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewPerson #1")
+	}
+
+	if info.Error != nil {
+		return &domain.Response{
+			Error:      info.Error,
+			StatusCode: info.StatusCode,
+		}, nil
+	}
+
+	req.Age, req.Gender = info.Agify.Age, info.Genderize.Gender
+
+	if len(info.Nationalize.Country) != 0 {
+		req.Nation = &info.Nationalize.Country[0].CountryId
+	}
+
+	if err = u.personRepository.Create(req); err != nil {
+		return nil, errors.Wrap(err, "NewPerson #2")
+	}
+
+	return &domain.Response{
+		Data:       req,
+		StatusCode: http.StatusCreated,
+	}, nil
+}
+
+func (u *usecase) GetByID(id int) (*domain.Response, error) {
+	person, err := u.personRepository.GetByID(id)
+	if err != nil {
+		if errors.Cause(err) == sql.ErrNoRows {
+			return &domain.Response{
+				Error:      &personNotFoundErr,
+				StatusCode: http.StatusNotFound,
+			}, nil
+		}
+
+		return nil, errors.Wrap(err, "GetByID #1")
+	}
+
+	return &domain.Response{
+		Data:       person,
+		StatusCode: http.StatusOK,
+	}, nil
+}
+
+func (u *usecase) GetWithFilterAndPagination(req *domain.FilterWithPagination) (*domain.Response, error) {
 	return nil, nil
 }
 
-func (u *usecase) GetByID(id int) (*domain.Person, error) {
+func (u *usecase) Update(req *domain.Person) (*domain.Response, error) {
 	return nil, nil
 }
 
-func (u *usecase) GetWithFilterAndPagination(req *domain.FilterWithPagination) ([]domain.Person, error) {
-	return nil, nil
-}
+func (u *usecase) Delete(id int) (*domain.Response, error) {
+	aff, err := u.personRepository.Delete(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Delete #1")
+	}
 
-func (u *usecase) Update(req *domain.Person) (*domain.Person, error) {
-	return nil, nil
-}
+	if *aff == 0 {
+		return &domain.Response{
+			Error:      &personNotFoundErr,
+			StatusCode: http.StatusNotFound,
+		}, nil
+	}
 
-func (u *usecase) Delete(id int) error {
-	return nil
+	return &domain.Response{
+		Data:       "record deleted successfully",
+		StatusCode: http.StatusOK,
+	}, nil
 }

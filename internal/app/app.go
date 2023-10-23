@@ -26,7 +26,7 @@ func Start() {
 
 	go func() {
 		if err := a.server.ListenAndServe(); err != nil {
-			log.Error(errors.Wrap(err, "Start #2"))
+			log.Error(errors.Wrap(err, "Start #1"))
 		}
 	}()
 
