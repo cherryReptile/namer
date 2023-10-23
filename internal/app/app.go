@@ -24,11 +24,13 @@ func Start() {
 
 	a := newApp(ctx)
 
-	go a.quit(ctx)
+	go func() {
+		if err := a.server.ListenAndServe(); err != nil {
+			log.Error(errors.Wrap(err, "Start #2"))
+		}
+	}()
 
-	if err := a.server.ListenAndServe(); err != nil {
-		log.Fatal(errors.Wrap(err, "Start #2"))
-	}
+	a.quit(ctx)
 }
 
 func newApp(ctx context.Context) *app {
@@ -86,4 +88,6 @@ func (a *app) shutdown(ctx context.Context) {
 	if err := a.db.Close(); err != nil {
 		log.Error(errors.Wrap(err, "shutdown #2"))
 	}
+
+	log.Info("services closed")
 }

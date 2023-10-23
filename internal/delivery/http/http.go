@@ -3,18 +3,16 @@ package http
 import (
 	"database/sql"
 	"github.com/gin-gonic/gin"
-	"namer/internal/storage/usecase /person"
+	"namer/internal/storage/usecase/person"
 	"net/http"
 )
 
 type Handler struct {
-	db      *sql.DB
 	usecase person.Usecase
 }
 
 func NewHandler(db *sql.DB) *Handler {
 	return &Handler{
-		db:      db,
 		usecase: person.NewUsecase(db),
 	}
 }
