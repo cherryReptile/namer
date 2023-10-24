@@ -5,13 +5,13 @@ create type persons.gender as enum ('male', 'female');
 create table if not exists persons.persons_table
 (
     id         bigserial primary key,
-    name       varchar(250)                 not null,
-    surname    varchar(250)                 not null,
+    name       varchar(250)            not null,
+    surname    varchar(250)            not null,
     patronymic varchar(250),
     age        smallint,
-    gender     persons.gender default 'male',
+    gender     persons.gender,
     nation     varchar(100),
-    created_at timestamp      default now() not null,
+    created_at timestamp default now() not null,
     updated_at timestamp
 );
 

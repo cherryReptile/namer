@@ -10,19 +10,15 @@ import (
 	"time"
 )
 
-type Repository interface {
-	GetNameInfo(name string) (*external.ExternalResponse, error)
-}
-
-type api struct {
+type APIRepository struct {
 	client    *http.Client
 	ageURL    string
 	genderURL string
 	nationURL string
 }
 
-func NewRepository() Repository {
-	return &api{
+func NewRepository() *APIRepository {
+	return &APIRepository{
 		client: &http.Client{
 			Timeout: time.Second * 15,
 		},
@@ -32,13 +28,13 @@ func NewRepository() Repository {
 	}
 }
 
-func (a *api) GetNameInfo(name string) (*external.ExternalResponse, error) {
+func (a *APIRepository) GetNameInfo(name string) (*external.ExternalResponse, error) {
 	var (
 		res external.ExternalResponse
 		err error
 	)
 
-	if res.Agify, err = a.getAge(name); err != nil {
+	if res.Agify, err = a.GetAge(name); err != nil {
 		return nil, errors.Wrap(err, "GetNameInfo #1")
 	}
 
@@ -48,7 +44,7 @@ func (a *api) GetNameInfo(name string) (*external.ExternalResponse, error) {
 		return &res, nil
 	}
 
-	if res.Genderize, err = a.getGender(name); err != nil {
+	if res.Genderize, err = a.GetGender(name); err != nil {
 		return nil, errors.Wrap(err, "GetNameInfo #2")
 	}
 
@@ -58,7 +54,7 @@ func (a *api) GetNameInfo(name string) (*external.ExternalResponse, error) {
 		return &res, nil
 	}
 
-	if res.Nationalize, err = a.getNation(name); err != nil {
+	if res.Nationalize, err = a.GetNation(name); err != nil {
 		return nil, errors.Wrap(err, "GetNameInfo #3")
 	}
 
@@ -71,7 +67,7 @@ func (a *api) GetNameInfo(name string) (*external.ExternalResponse, error) {
 	return &res, nil
 }
 
-func (a *api) getAge(name string) (*external.AgifyResponse, error) {
+func (a *APIRepository) GetAge(name string) (*external.AgifyResponse, error) {
 	res, err := http.Get(
 		fmt.Sprintf(a.ageURL, name),
 	)
@@ -98,7 +94,7 @@ func (a *api) getAge(name string) (*external.AgifyResponse, error) {
 	return &agify, nil
 }
 
-func (a *api) getGender(name string) (*external.GenderizeResponse, error) {
+func (a *APIRepository) GetGender(name string) (*external.GenderizeResponse, error) {
 	res, err := http.Get(
 		fmt.Sprintf(a.genderURL, name),
 	)
@@ -125,7 +121,7 @@ func (a *api) getGender(name string) (*external.GenderizeResponse, error) {
 	return &genderize, nil
 }
 
-func (a *api) getNation(name string) (*external.NationalizeResponse, error) {
+func (a *APIRepository) GetNation(name string) (*external.NationalizeResponse, error) {
 	res, err := http.Get(
 		fmt.Sprintf(a.nationURL, name),
 	)

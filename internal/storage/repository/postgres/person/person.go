@@ -2,29 +2,22 @@ package person
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/pkg/errors"
 	"namer/internal/domain"
 )
 
-type Repository interface {
-	Create(req *domain.Person) error
-	GetByID(id int) (*domain.Person, error)
-	GetWithFilterAndPagination(req *domain.FilterWithPagination) ([]domain.Person, error)
-	Update(req *domain.Person) (*int64, error)
-	Delete(id int) (*int64, error)
-}
-
-type repository struct {
+type PersonRepository struct {
 	db *sql.DB
 }
 
-func NewRepository(db *sql.DB) Repository {
-	return &repository{
+func NewRepository(db *sql.DB) *PersonRepository {
+	return &PersonRepository{
 		db: db,
 	}
 }
 
-func (r *repository) Create(req *domain.Person) error {
+func (r *PersonRepository) Create(req *domain.Person) error {
 	query := `
 		insert into persons.persons_table
 		(
@@ -57,7 +50,7 @@ func (r *repository) Create(req *domain.Person) error {
 	return nil
 }
 
-func (r *repository) GetByID(id int) (*domain.Person, error) {
+func (r *PersonRepository) GetByID(id int) (*domain.Person, error) {
 	query := `
 		select
 		    p.id, 
@@ -92,15 +85,96 @@ func (r *repository) GetByID(id int) (*domain.Person, error) {
 	return &person, nil
 }
 
-func (r *repository) GetWithFilterAndPagination(req *domain.FilterWithPagination) ([]domain.Person, error) {
-	return nil, nil
+func (r *PersonRepository) GetWithFilterAndPagination(filter, pagination string) ([]byte, error) {
+	query := fmt.Sprintf(`
+		select jsonb_build_object(
+					   'data',
+					   jsonb_agg(
+							   jsonb_build_object(
+									   'id', p.id,
+									   'name', p.name,
+									   'surname', p.surname,
+									   'patronymic', p.patronymic,
+									   'age', p.age,
+									   'gender', p.gender,
+									   'nation', p.nation,
+									   'created_at', p.created_at,
+									   'updated_at', p.updated_at
+								   )
+						   ),
+					   'meta', jsonb_build_object(
+							   'all_row_count', (select count(*) from persons.persons_table)
+						   )
+				   )
+		from (select pt.id,
+					 pt.name,
+					 pt.surname,
+					 pt.patronymic,
+					 pt.age,
+					 pt.gender,
+					 pt.nation,
+					 pt.created_at,
+					 pt.updated_at
+			  from persons.persons_table as pt %s
+			  order by pt.id desc %s
+			  ) as p;
+	`, filter, pagination)
+
+	var b []byte
+
+	if err := r.db.QueryRow(query).Scan(&b); err != nil {
+		return nil, errors.Wrap(err, "GetWithFilterAndPagination #1")
+	}
+
+	return b, nil
 }
 
-func (r *repository) Update(req *domain.Person) (*int64, error) {
-	return nil, nil
+func (r *PersonRepository) Update(req *domain.Person) error {
+	query := `
+		update persons.persons_table
+		set 
+		    name = case 
+		        		when $1 != ''
+		        			then $1
+		        		else persons_table.name
+		           end,
+		    surname = case 
+		        		when $2 != ''
+		        			then $2
+						else persons_table.surname
+		              end,
+		    patronymic = $3,
+		    age = $4,
+		    gender = $5,
+		    nation = $6
+		where id = $7
+		returning name, surname, patronymic, age, gender, nation;
+	`
+
+	if err := r.db.QueryRow(
+		query,
+		req.Name,
+		req.Surname,
+		req.Patronymic,
+		req.Age,
+		req.Gender,
+		req.Nation,
+		req.ID,
+	).Scan(
+		&req.Name,
+		&req.Surname,
+		&req.Patronymic,
+		&req.Age,
+		&req.Gender,
+		&req.Nation,
+	); err != nil {
+		return errors.Wrap(err, "Update #1")
+	}
+
+	return nil
 }
 
-func (r *repository) Delete(id int) (*int64, error) {
+func (r *PersonRepository) Delete(id int) (*int64, error) {
 	query := `
 		delete
 		from persons.persons_table
