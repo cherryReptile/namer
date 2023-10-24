@@ -6,6 +6,6 @@ COPY ./ ./
 
 RUN go build -o ./main ./cmd/namer/main.go
 
-RUN rm -rfv !("main")
+RUN find . ! -name main -delete
 
 CMD ["/app/main"]

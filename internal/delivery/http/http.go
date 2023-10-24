@@ -38,7 +38,7 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) NewPerson(c *gin.Context) {
 	var req domain.Person
 
-	if err := c.Bind(&req); err != nil {
+	if err := c.BindJSON(&req); err != nil {
 		log.Errorln(errors.Wrap(err, "NewPerson #1"))
 
 		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
@@ -91,7 +91,7 @@ func (h *Handler) GetPerson(c *gin.Context) {
 func (h *Handler) GetPersons(c *gin.Context) {
 	var req domain.FilterWithPagination
 
-	if err := c.Bind(&req); err != nil {
+	if err := c.BindJSON(&req); err != nil {
 		log.Errorln(errors.Wrap(err, "GetPersons #1"))
 
 		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
@@ -131,7 +131,7 @@ func (h *Handler) UpdatePerson(c *gin.Context) {
 		return
 	}
 
-	if err = c.Bind(&req); err != nil {
+	if err = c.BindJSON(&req); err != nil {
 		log.Errorln(errors.Wrap(err, "UpdatePerson #2"))
 
 		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{

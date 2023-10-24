@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	handler "namer/internal/delivery/http"
@@ -25,6 +24,8 @@ func Start() {
 	a := newApp(ctx)
 
 	go func() {
+		log.Info("starting server at ", a.server.Addr)
+
 		if err := a.server.ListenAndServe(); err != nil {
 			log.Error(errors.Wrap(err, "Start #1"))
 		}
@@ -38,10 +39,6 @@ func newApp(ctx context.Context) *app {
 		a   app
 		err error
 	)
-
-	if err = godotenv.Load(".env"); err != nil {
-		log.Fatal("failed to load env: ", errors.Wrap(err, "newApp #1"))
-	}
 
 	if a.db, err = ConnectToDB(ctx); err != nil {
 		log.Fatalf("failed to connect to database: %v", errors.Wrap(err, "newApp #2"))
