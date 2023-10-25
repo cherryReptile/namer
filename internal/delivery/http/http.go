@@ -38,7 +38,7 @@ func NewHandler(db *sql.DB) *Handler {
 func (h *Handler) NewPerson(c *gin.Context) {
 	var req domain.Person
 
-	if err := c.BindJSON(&req); err != nil {
+	if err := c.BindJSON(&req); err != nil || req.Name == "" || req.Surname == "" {
 		log.Errorln(errors.Wrap(err, "NewPerson #1"))
 
 		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
