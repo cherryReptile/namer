@@ -4,9 +4,9 @@ import "time"
 
 type Person struct {
 	ID         int        `json:"id"`
-	Name       string     `json:"name" form:"name"`
-	Surname    string     `json:"surname" form:"surname"`
-	Patronymic *string    `json:"patronymic" form:"patronymic"`
+	Name       string     `json:"name"`
+	Surname    string     `json:"surname"`
+	Patronymic *string    `json:"patronymic"`
 	Age        *int       `json:"age"`
 	Gender     *string    `json:"gender"`
 	Nation     *string    `json:"nation"`
@@ -15,25 +15,22 @@ type Person struct {
 }
 
 type FilterWithPagination struct {
-	Filter     []Filter    `form:"filter"`
-	Pagination *Pagination `form:"pagination"`
+	Filter     []Filter    `json:"filter"`
+	Pagination *Pagination `json:"pagination"`
 }
 
 type Filter struct {
-	Field string `form:"field"`
-	Value string `form:"value"`
+	Field string `json:"field"`
+	Value string `json:"value"`
 }
 
 type Pagination struct {
-	Limit int `form:"limit"`
-	Page  int `form:"page"`
+	Limit int `json:"limit"`
+	Page  int `json:"page"`
 }
 
 type Response struct {
-	Data  any     `json:"data,omitempty"`
-	Error *string `json:"error,omitempty"`
-	Meta  *struct {
-		AllRowCount int `json:"all_row_count"`
-	} `json:"meta,omitempty"`
-	StatusCode int `json:"-"`
+	Data       any     `json:"data,omitempty"`
+	Error      *string `json:"error,omitempty"`
+	StatusCode int     `json:"-"`
 }
