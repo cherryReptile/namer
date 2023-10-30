@@ -14,12 +14,18 @@ import (
 	"namer/internal/domain"
 	"namer/pkg/utils"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
 
 func connectToDB() (*sql.DB, error) {
-	if err := godotenv.Load("/home/lamer/go/src/namer/.env"); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err = godotenv.Load(filepath.Join(filepath.Dir(wd), "../../../..", ".env")); err != nil {
 		log.Fatal(err)
 	}
 
