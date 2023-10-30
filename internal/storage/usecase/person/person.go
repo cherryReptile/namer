@@ -14,9 +14,6 @@ import (
 
 type APIRepository interface {
 	GetNameInfo(name string) (*external.ExternalResponse, error)
-	GetAge(name string) (*external.AgifyResponse, error)
-	GetGender(name string) (*external.GenderizeResponse, error)
-	GetNation(name string) (*external.NationalizeResponse, error)
 }
 
 type PersonRepository interface {
@@ -68,7 +65,7 @@ func (u *Usecase) NewPerson(req *domain.Person) (*domain.Response, error) {
 		return nil, customErrors.New(
 			*info.Error,
 			errors.Wrap(errors.New(*info.Error), "NewPerson #3"),
-			info.StatusCode,
+			http.StatusServiceUnavailable,
 		)
 	}
 
