@@ -58,188 +58,204 @@ func connectToDB() (*sql.DB, error) {
 func TestCreate(t *testing.T) {
 	db, err := connectToDB()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 
 	repo := NewRepository(db)
 
-	req := domain.Person{
-		Name:    "Test",
-		Surname: "Test",
-	}
+	t.Run("success", func(t *testing.T) {
+		req := domain.Person{
+			Name:    "Test",
+			Surname: "Test",
+		}
 
-	createPerson(t, repo, &req)
+		createPerson(t, repo, &req)
 
-	deletePerson(t, repo, &req)
+		deletePerson(t, repo, &req)
+	})
 
-	//bad case
-	bad := domain.Person{
-		Gender: stringToPtr("Test"),
-	}
+	t.Run("error", func(t *testing.T) {
+		bad := domain.Person{
+			Gender: utils.StringToPtr("Test"),
+		}
 
-	require.Error(t, repo.Create(&bad))
+		assert.Error(t, repo.Create(&bad))
+	})
 }
 
 func TestGetByID(t *testing.T) {
 	db, err := connectToDB()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 
 	repo := NewRepository(db)
 
-	req := domain.Person{
-		Name:    "Test",
-		Surname: "Test",
-	}
+	t.Run("success", func(t *testing.T) {
+		req := domain.Person{
+			Name:    "Test",
+			Surname: "Test",
+		}
 
-	createPerson(t, repo, &req)
+		createPerson(t, repo, &req)
 
-	p, err := repo.GetByID(req.ID)
+		p, err := repo.GetByID(req.ID)
 
-	require.Nil(t, err)
+		require.NoError(t, err)
 
-	assert.Equal(t, p, &req)
+		assert.Equal(t, p, &req)
 
-	deletePerson(t, repo, p)
+		deletePerson(t, repo, p)
+	})
 
-	//bad case
-	badP, err := repo.GetByID(0)
+	t.Run("error", func(t *testing.T) {
+		badP, err := repo.GetByID(0)
 
-	assert.Nil(t, badP)
-	if assert.Error(t, err) {
-		assert.Equal(t, sql.ErrNoRows, errors.Cause(err))
-	}
+		assert.Nil(t, badP)
+		if assert.Error(t, err) {
+			assert.Equal(t, sql.ErrNoRows, errors.Cause(err))
+		}
+	})
 }
 
 func TestGetWithFilterAndPagination(t *testing.T) {
 	db, err := connectToDB()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 
 	repo := NewRepository(db)
 
-	var persons []domain.Person
+	t.Run("success", func(t *testing.T) {
+		var persons []domain.Person
 
-	for i := 0; i < 5; i++ {
-		person := domain.Person{
-			Name:    fmt.Sprintf("Test%d", i),
-			Surname: fmt.Sprintf("Test%d", i),
-		}
-
-		createPerson(t, repo, &person)
-
-		persons = append(persons, person)
-	}
-
-	req := domain.FilterWithPagination{
-		Filter: []domain.Filter{
-			{"name", "te"},
-			{"surname", "t"},
-		},
-		Pagination: &domain.Pagination{
-			Page:  1,
-			Limit: 5,
-		},
-	}
-
-	result, err := utils.GetFilterAndPagination(&req, "pt")
-	assert.Nil(t, err)
-	require.Equal(t, len(result), 2)
-
-	b, err := repo.GetWithFilterAndPagination(result[0], result[1])
-	assert.Nil(t, err)
-	assert.NotNil(t, b)
-
-	resp := struct {
-		Data []domain.Person `json:"data"`
-		Meta *struct {
-			AllRowCount int `json:"all_row_count"`
-		}
-	}{}
-
-	assert.Nil(t, json.Unmarshal(b, &resp))
-
-	if assert.NotNil(t, resp.Data) {
-		for i := range resp.Data {
-			if i == 0 {
-				assert.Equal(t, resp.Data[i].Name, persons[len(persons)-1].Name)
-				assert.Equal(t, resp.Data[i].Surname, persons[len(persons)-1].Surname)
-			} else {
-				assert.Equal(t, resp.Data[i].Name, persons[len(persons)-i-1].Name)
-				assert.Equal(t, resp.Data[i].Surname, persons[len(persons)-i-1].Surname)
+		for i := 0; i < 5; i++ {
+			person := domain.Person{
+				Name:    fmt.Sprintf("Test%d", i),
+				Surname: fmt.Sprintf("Test%d", i),
 			}
 
-			assert.Equal(t, resp.Meta.AllRowCount, len(persons))
+			createPerson(t, repo, &person)
 
-			deletePerson(t, repo, &resp.Data[i])
+			persons = append(persons, person)
 		}
-	}
 
-	//bad case
-	b, err = repo.GetWithFilterAndPagination("test", "test")
-	assert.Nil(t, b)
-	assert.Error(t, err)
+		req := domain.FilterWithPagination{
+			Filter: []domain.Filter{
+				{"name", "te"},
+				{"surname", "t"},
+			},
+			Pagination: &domain.Pagination{
+				Page:  1,
+				Limit: 5,
+			},
+		}
+
+		result, err := utils.GetFilterAndPagination(&req, "pt")
+		assert.NoError(t, err)
+		require.Equal(t, len(result), 2)
+
+		b, err := repo.GetWithFilterAndPagination(result[0], result[1])
+		assert.NoError(t, err)
+		assert.NotNil(t, b)
+
+		resp := struct {
+			Data []domain.Person `json:"data"`
+			Meta *struct {
+				AllRowCount int `json:"all_row_count"`
+			}
+		}{}
+
+		assert.Nil(t, json.Unmarshal(b, &resp))
+
+		if assert.NotNil(t, resp.Data) {
+			for i := range resp.Data {
+				if i == 0 {
+					assert.Equal(t, resp.Data[i].Name, persons[len(persons)-1].Name)
+					assert.Equal(t, resp.Data[i].Surname, persons[len(persons)-1].Surname)
+				} else {
+					assert.Equal(t, resp.Data[i].Name, persons[len(persons)-i-1].Name)
+					assert.Equal(t, resp.Data[i].Surname, persons[len(persons)-i-1].Surname)
+				}
+
+				assert.Equal(t, resp.Meta.AllRowCount, len(persons))
+
+				deletePerson(t, repo, &resp.Data[i])
+			}
+		}
+	})
+
+	t.Run("error", func(t *testing.T) {
+		b, err := repo.GetWithFilterAndPagination("test", "test")
+		assert.Nil(t, b)
+		assert.Error(t, err)
+	})
 }
 
 func TestUpdate(t *testing.T) {
 	db, err := connectToDB()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 
 	repo := NewRepository(db)
 
-	req := domain.Person{
-		Name:    "Test",
-		Surname: "Test",
-	}
+	t.Run("success", func(t *testing.T) {
+		req := domain.Person{
+			Name:    "Test",
+			Surname: "Test",
+		}
 
-	createPerson(t, repo, &req)
+		createPerson(t, repo, &req)
 
-	req.Name, req.Surname, req.Gender = "Test1", "Test1", stringToPtr("male")
+		req.Name, req.Surname, req.Gender = "Test1", "Test1", utils.StringToPtr("male")
 
-	assert.Nil(t, repo.Update(&req))
-	assert.Equal(t, req.Name, "Test1")
-	assert.Equal(t, req.Surname, "Test1")
-	assert.Equal(t, req.Gender, stringToPtr("male"))
-	assert.NotNil(t, req.UpdatedAt)
+		assert.Nil(t, repo.Update(&req))
+		assert.Equal(t, req.Name, "Test1")
+		assert.Equal(t, req.Surname, "Test1")
+		assert.Equal(t, req.Gender, utils.StringToPtr("male"))
+		assert.NotNil(t, req.UpdatedAt)
 
-	deletePerson(t, repo, &req)
+		deletePerson(t, repo, &req)
+	})
 
-	//bad case
-	err = repo.Update(&req)
-	if assert.Error(t, err) {
-		assert.Equal(t, sql.ErrNoRows, errors.Cause(err))
-	}
+	t.Run("error", func(t *testing.T) {
+		err = repo.Update(&domain.Person{})
+		if assert.Error(t, err) {
+			assert.Equal(t, sql.ErrNoRows, errors.Cause(err))
+		}
+	})
 }
 
 func TestDelete(t *testing.T) {
 	db, err := connectToDB()
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 
 	repo := NewRepository(db)
 
-	req := domain.Person{
-		Name:    "Test",
-		Surname: "Test",
-	}
+	t.Run("success", func(t *testing.T) {
+		req := domain.Person{
+			Name:    "Test",
+			Surname: "Test",
+		}
 
-	createPerson(t, repo, &req)
+		createPerson(t, repo, &req)
 
-	deletePerson(t, repo, &req)
+		deletePerson(t, repo, &req)
+	})
 
-	aff, err := repo.Delete(req.ID)
+	t.Run("error", func(t *testing.T) {
+		aff, err := repo.Delete(0)
 
-	assert.Nil(t, err)
-	assert.Equal(t, *aff, int64(0))
+		assert.NoError(t, err)
+		assert.Equal(t, *aff, int64(0))
+	})
 }
 
 func createPerson(t *testing.T, repo *PersonRepository, person *domain.Person) {
-	require.Nil(t, repo.Create(person))
+	require.NoError(t, repo.Create(person))
 
 	assert.NotEqual(t, person.ID, 0)
 	assert.Equal(t, person.Name, person.Name)
@@ -250,10 +266,6 @@ func createPerson(t *testing.T, repo *PersonRepository, person *domain.Person) {
 func deletePerson(t *testing.T, repo *PersonRepository, person *domain.Person) {
 	aff, err := repo.Delete(person.ID)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotEqual(t, *aff, 0)
-}
-
-func stringToPtr(str string) *string {
-	return &str
 }

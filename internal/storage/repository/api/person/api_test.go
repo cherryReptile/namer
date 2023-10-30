@@ -11,7 +11,7 @@ func TestGetNameInfo(t *testing.T) {
 
 	resp, err := repo.GetNameInfo("Helen")
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	if assert.NotNil(t, resp.Agify) {
@@ -45,7 +45,7 @@ func TestGetAge(t *testing.T) {
 
 	resp, err := repo.GetAge("Helen")
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	if assert.NotNil(t, resp) {
@@ -62,7 +62,7 @@ func TestGetGender(t *testing.T) {
 
 	resp, err := repo.GetGender("Helen")
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	if assert.NotNil(t, resp) {
@@ -80,7 +80,7 @@ func TestGetNation(t *testing.T) {
 
 	resp, err := repo.GetNation("Helen")
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	if assert.NotNil(t, resp) {

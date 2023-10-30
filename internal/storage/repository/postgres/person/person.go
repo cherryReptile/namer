@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"namer/internal/domain"
-	"time"
 )
 
 type PersonRepository struct {
@@ -27,10 +26,9 @@ func (r *PersonRepository) Create(req *domain.Person) error {
 		 patronymic,
 		 age,
 		 gender,
-		 nation,
-		 created_at
+		 nation
 		)
-		values ($1, $2, $3, $4, $5, $6, $7)
+		values ($1, $2, $3, $4, $5, $6)
 		returning id, created_at
 	`
 
@@ -42,7 +40,6 @@ func (r *PersonRepository) Create(req *domain.Person) error {
 		req.Age,
 		req.Gender,
 		req.Nation,
-		time.Now(),
 	).Scan(
 		&req.ID,
 		&req.CreatedAt,
@@ -101,8 +98,8 @@ func (r *PersonRepository) GetWithFilterAndPagination(filter, pagination string)
 									   'age', p.age,
 									   'gender', p.gender,
 									   'nation', p.nation,
-									   'created_at', to_char(p.created_at, '2006-01-02T15:04:05.999999-07:00'),
-									   'updated_at', p.updated_at
+									   'created_at', to_char(p.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+									   'updated_at', to_char(p.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
 								   )
 						   ),
 					   'meta', jsonb_build_object(
@@ -149,9 +146,8 @@ func (r *PersonRepository) Update(req *domain.Person) error {
 		    patronymic = $3,
 		    age = $4,
 		    gender = $5,
-		    nation = $6,
-		    updated_at = $7
-		where id = $8
+		    nation = $6
+		where id = $7
 		returning name, surname, patronymic, age, gender, nation, created_at, updated_at;
 	`
 
@@ -163,7 +159,6 @@ func (r *PersonRepository) Update(req *domain.Person) error {
 		req.Age,
 		req.Gender,
 		req.Nation,
-		time.Now(),
 		req.ID,
 	).Scan(
 		&req.Name,

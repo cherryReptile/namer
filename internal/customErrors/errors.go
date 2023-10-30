@@ -31,5 +31,9 @@ func Wrap(err error, message string) error {
 }
 
 func (e Error) Error() string {
-	return e.Message
+	return e.Err.Error()
+}
+
+func (e Error) Cause() error {
+	return errors.Cause(e.Err)
 }

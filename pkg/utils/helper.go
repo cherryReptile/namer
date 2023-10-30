@@ -11,6 +11,18 @@ func StringToPtr(str string) *string {
 	return &str
 }
 
+func IntToPtr(i int) *int {
+	return &i
+}
+
+func Float64ToPtr(f float64) *float64 {
+	return &f
+}
+
+func Int64ToPtr(i int64) *int64 {
+	return &i
+}
+
 func PrepareRequest(req *domain.Person) {
 	req.Name = strings.ReplaceAll(strings.TrimSpace(req.Name), " ", "")
 	req.Surname = strings.ReplaceAll(strings.TrimSpace(req.Surname), " ", "")

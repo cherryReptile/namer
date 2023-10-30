@@ -12,10 +12,12 @@ import (
 	"net/http"
 )
 
+//go:generate mockery --name APIRepositgoory
 type APIRepository interface {
 	GetNameInfo(name string) (*external.ExternalResponse, error)
 }
 
+//go:generate mockery --name PersonRepository
 type PersonRepository interface {
 	Create(req *domain.Person) error
 	GetByID(id int) (*domain.Person, error)
