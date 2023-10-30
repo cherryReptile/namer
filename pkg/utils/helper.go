@@ -52,9 +52,9 @@ func GetFilterAndPagination(req *domain.FilterWithPagination, alias string) ([]s
 			}
 
 			filter = fmt.Sprintf(
-				"%s.%s and %s ilike '%s%s%s",
-				alias,
+				"%s and %s.%s ilike '%s%s%s'",
 				filter,
+				alias,
 				req.Filter[i].Field,
 				"%",
 				req.Filter[i].Value,

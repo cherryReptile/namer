@@ -47,11 +47,11 @@ func newApp(ctx context.Context) *app {
 		log.Fatal("failed to load env: ", errors.Wrap(err, "newApp #1"))
 	}
 
-	if a.db, err = ConnectToDB(ctx); err != nil {
+	if a.db, err = connectToDB(ctx); err != nil {
 		log.Fatalf("failed to connect to database: %v", errors.Wrap(err, "newApp #2"))
 	}
 
-	a.server = NewServer(initRouter(a.db))
+	a.server = newServer(initRouter(a.db))
 
 	return &a
 }

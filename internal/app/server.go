@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func NewServer(e *echo.Echo) *http.Server {
+func newServer(e *echo.Echo) *http.Server {
 	s := &http.Server{
 		Addr: fmt.Sprintf(
 			"%s:%s",
