@@ -3,10 +3,13 @@ package app
 import (
 	"context"
 	"database/sql"
-	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	handler "namer/internal/delivery/http"
+	"namer/internal/delivery/http/middlewares"
 	"net/http"
 	"os"
 	"os/signal"
@@ -40,29 +43,33 @@ func newApp(ctx context.Context) *app {
 		err error
 	)
 
-	if a.db, err = ConnectToDB(ctx); err != nil {
+	if err = godotenv.Load(".env"); err != nil {
+		log.Fatal("failed to load env: ", errors.Wrap(err, "newApp #1"))
+	}
+
+	if a.db, err = connectToDB(ctx); err != nil {
 		log.Fatalf("failed to connect to database: %v", errors.Wrap(err, "newApp #2"))
 	}
 
-	a.server = NewServer(initRouter(a.db))
+	a.server = newServer(initRouter(a.db))
 
 	return &a
 }
 
-func initRouter(db *sql.DB) *gin.Engine {
-	g := gin.New()
+func initRouter(db *sql.DB) *echo.Echo {
+	e := echo.New()
 
 	h := handler.NewHandler(db)
 
-	api := g.Group("/api/person", gin.Logger())
+	api := e.Group("/api/person", middleware.Logger(), middlewares.ErrLogger())
 
-	api.Handle(http.MethodPost, "", h.NewPerson)
-	api.Handle(http.MethodGet, "/:id", h.GetPerson)
-	api.Handle(http.MethodPost, "/filter", h.GetPersons)
-	api.Handle(http.MethodPut, "/:id", h.UpdatePerson)
-	api.Handle(http.MethodDelete, "/:id", h.DeletePerson)
+	api.POST("", h.NewPerson)
+	api.GET("/:id", h.GetPerson)
+	api.POST("/filter", h.GetPersons)
+	api.PUT("/:id", h.UpdatePerson)
+	api.DELETE("/:id", h.DeletePerson)
 
-	return g
+	return e
 }
 
 func (a *app) quit(ctx context.Context) {

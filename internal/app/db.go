@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func ConnectToDB(ctx context.Context) (*sql.DB, error) {
+func connectToDB(ctx context.Context) (*sql.DB, error) {
 	db, err := sql.Open(
 		"postgres",
 		fmt.Sprintf(

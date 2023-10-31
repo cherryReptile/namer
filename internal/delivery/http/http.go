@@ -2,16 +2,16 @@ package http
 
 import (
 	"database/sql"
-	"github.com/gin-gonic/gin"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"namer/internal/customErrors"
 	"namer/internal/domain"
 	"namer/internal/storage/usecase/person"
-	"namer/pkg/utils"
 	"net/http"
 	"strconv"
 )
 
+//go:generate mockery --name Usecase
 type Usecase interface {
 	NewPerson(req *domain.Person) (*domain.Response, error)
 	GetByID(id int) (*domain.Response, error)
@@ -21,8 +21,8 @@ type Usecase interface {
 }
 
 var (
-	invalidParameter   = "invalid uri parameter"
-	invalidRequestBody = "invalid request body"
+	invalidParameterErr   = "invalid uri parameter"
+	invalidRequestBodyErr = "invalid request body"
 )
 
 type Handler struct {
@@ -35,150 +35,111 @@ func NewHandler(db *sql.DB) *Handler {
 	}
 }
 
-func (h *Handler) NewPerson(c *gin.Context) {
+func (h *Handler) NewPerson(c echo.Context) error {
 	var req domain.Person
 
-	if err := c.BindJSON(&req); err != nil || req.Name == "" || req.Surname == "" {
-		log.Errorln(errors.Wrap(err, "NewPerson #1"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidRequestBody,
-		})
-
-		return
+	if err := c.Bind(&req); err != nil {
+		return customErrors.New(
+			invalidRequestBodyErr,
+			errors.Wrap(err, "NewPerson #1"),
+			http.StatusBadRequest,
+		)
 	}
 
 	res, err := h.usecase.NewPerson(&req)
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "NewPerson #2"))
-
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.Response{
-			Error: utils.StringToPtr(http.StatusText(http.StatusInternalServerError)),
-		})
-
-		return
+		return customErrors.Wrap(err, "NewPerson #2")
 	}
 
-	c.JSON(res.StatusCode, res)
+	return c.JSON(res.StatusCode, res)
 }
 
-func (h *Handler) GetPerson(c *gin.Context) {
+func (h *Handler) GetPerson(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "GetPerson #1"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidParameter,
-		})
-
-		return
+		return customErrors.New(
+			invalidParameterErr,
+			errors.Wrap(err, "GetPerson #1"),
+			http.StatusBadRequest,
+		)
 	}
 
 	res, err := h.usecase.GetByID(id)
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "GetPerson #2"))
-
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.Response{
-			Error: utils.StringToPtr(http.StatusText(http.StatusInternalServerError)),
-		})
-
-		return
+		return customErrors.Wrap(err, "GetPerson #2")
 	}
 
-	c.JSON(res.StatusCode, res)
+	return c.JSON(res.StatusCode, res)
 }
 
-func (h *Handler) GetPersons(c *gin.Context) {
+func (h *Handler) GetPersons(c echo.Context) error {
 	var req domain.FilterWithPagination
 
-	if err := c.BindJSON(&req); err != nil {
-		log.Errorln(errors.Wrap(err, "GetPersons #1"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidRequestBody,
-		})
-
-		return
+	if err := c.Bind(&req); err != nil {
+		return customErrors.New(
+			invalidRequestBodyErr,
+			errors.Wrap(err, "GetPersons #1"),
+			http.StatusBadRequest,
+		)
 	}
 
 	res, err := h.usecase.GetWithFilterAndPagination(&req)
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "GetPersons #2"))
-
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.Response{
-			Error: utils.StringToPtr(http.StatusText(http.StatusInternalServerError)),
-		})
-
-		return
+		return customErrors.Wrap(err, "GetPersons #2")
 	}
 
-	c.JSON(res.StatusCode, res)
+	resB, ok := res.Data.([]byte)
+	if !ok {
+		return c.JSON(res.StatusCode, res)
+	}
+
+	return c.JSONBlob(res.StatusCode, resB)
 }
 
-func (h *Handler) UpdatePerson(c *gin.Context) {
+func (h *Handler) UpdatePerson(c echo.Context) error {
 	var (
 		req domain.Person
 		err error
 	)
 
 	if req.ID, err = strconv.Atoi(c.Param("id")); err != nil {
-		log.Errorln(errors.Wrap(err, "UpdatePerson #1"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidParameter,
-		})
-
-		return
+		return customErrors.New(
+			invalidParameterErr,
+			errors.Wrap(err, "UpdatePerson #1"),
+			http.StatusBadRequest,
+		)
 	}
 
-	if err = c.BindJSON(&req); err != nil {
-		log.Errorln(errors.Wrap(err, "UpdatePerson #2"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidRequestBody,
-		})
-
-		return
+	if err = c.Bind(&req); err != nil {
+		return customErrors.New(
+			invalidRequestBodyErr,
+			errors.Wrap(err, "UpdatePerson #2"),
+			http.StatusBadRequest,
+		)
 	}
 
 	res, err := h.usecase.Update(&req)
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "UpdatePerson #3"))
-
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.Response{
-			Error: utils.StringToPtr(http.StatusText(http.StatusInternalServerError)),
-		})
-
-		return
+		return customErrors.Wrap(err, "UpdatePerson #3")
 	}
 
-	c.JSON(res.StatusCode, res)
+	return c.JSON(res.StatusCode, res)
 }
 
-func (h *Handler) DeletePerson(c *gin.Context) {
-	var err error
-
+func (h *Handler) DeletePerson(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "DeletePerson #1"))
-
-		c.AbortWithStatusJSON(http.StatusBadRequest, domain.Response{
-			Error: &invalidParameter,
-		})
-
-		return
+		return customErrors.New(
+			invalidParameterErr,
+			errors.Wrap(err, "DeletePerson #1"),
+			http.StatusBadRequest,
+		)
 	}
 
 	res, err := h.usecase.Delete(id)
 	if err != nil {
-		log.Errorln(errors.Wrap(err, "DeletePerson #2"))
-
-		c.AbortWithStatusJSON(http.StatusInternalServerError, domain.Response{
-			Error: utils.StringToPtr(http.StatusText(http.StatusInternalServerError)),
-		})
-
-		return
+		return customErrors.Wrap(err, "DeletePerson #2")
 	}
 
-	c.JSON(res.StatusCode, res)
+	return c.JSON(res.StatusCode, res)
 }

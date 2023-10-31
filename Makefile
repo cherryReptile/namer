@@ -20,3 +20,7 @@ migrate.up:
 	docker-compose exec migrate migrate -database "postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):5432/$(DB_NAME)?sslmode=disable" -path migrations up
 migrate.down:
 	docker-compose exec migrate migrate -database "postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):5432/$(DB_NAME)?sslmode=disable" -path migrations down
+migrate.up.test:
+	docker-compose exec migrate migrate -database "postgres://$(DB_USER_TEST):$(DB_PASSWORD_TEST)@$(DB_HOST_TEST):5432/$(DB_NAME_TEST)?sslmode=disable" -path migrations up
+migrate.down.test:
+	docker-compose exec migrate migrate -database "postgres://$(DB_USER_TEST):$(DB_PASSWORD_TEST)@$(DB_HOST_TEST):5432/$(DB_NAME_TEST)?sslmode=disable" -path migrations down

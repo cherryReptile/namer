@@ -98,8 +98,8 @@ func (r *PersonRepository) GetWithFilterAndPagination(filter, pagination string)
 									   'age', p.age,
 									   'gender', p.gender,
 									   'nation', p.nation,
-									   'created_at', p.created_at,
-									   'updated_at', p.updated_at
+									   'created_at', to_char(p.created_at, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+									   'updated_at', to_char(p.updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
 								   )
 						   ),
 					   'meta', jsonb_build_object(
@@ -148,7 +148,7 @@ func (r *PersonRepository) Update(req *domain.Person) error {
 		    gender = $5,
 		    nation = $6
 		where id = $7
-		returning name, surname, patronymic, age, gender, nation;
+		returning name, surname, patronymic, age, gender, nation, created_at, updated_at;
 	`
 
 	if err := r.db.QueryRow(
@@ -167,6 +167,8 @@ func (r *PersonRepository) Update(req *domain.Person) error {
 		&req.Age,
 		&req.Gender,
 		&req.Nation,
+		&req.CreatedAt,
+		&req.UpdatedAt,
 	); err != nil {
 		return errors.Wrap(err, "Update #1")
 	}
