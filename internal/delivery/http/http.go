@@ -11,6 +11,7 @@ import (
 	"strconv"
 )
 
+//go:generate mockery --name Usecase
 type Usecase interface {
 	NewPerson(req *domain.Person) (*domain.Response, error)
 	GetByID(id int) (*domain.Response, error)
